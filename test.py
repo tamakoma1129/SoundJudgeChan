@@ -5,6 +5,11 @@ import librosa
 import numpy as np
 import os
 
+#一応バージョンつけとく
+version = "ver1.0"
+
+#画像の切り替え
+index = 0
 # モデルとLabelEncoderを読み込む
 loaded_model = joblib.load('./modelData/model.pkl')
 loaded_encoder = joblib.load('./modelData/encoder.pkl')
@@ -12,7 +17,7 @@ loaded_encoder = joblib.load('./modelData/encoder.pkl')
 label_dic = {0:"Bass",1:"FX",2:"Lead",3:"Pad",4:"Pluck",5:"Stab"}
 label_list=[[0,"Bass"],[0,"FX"],[0,"Lead"],[0,"Pad"],[0,"Pluck"],[0,"Stab"]]
 
-max_length = int(44100 * 2)  # 今回は3秒でパディングするので、44100Hz*2秒=88200
+max_length = int(44100 * 2)  # 今回は2秒でパディングするので、44100Hz*2秒=88200
 
 def load_and_pad(file_path):#パッティング関数
     y, sr = librosa.load(file_path, sr=None)
@@ -46,15 +51,23 @@ def drop(event):  # ドロップされた時の処理
     ext = os.path.splitext(filepath)[-1].lower()
     if ext not in [".mp3", ".wav"]:
         text.delete('1.0', tk.END)
-        text.insert(tk.END, f'このタイプの拡張子は対応していません: {ext}\nmp3形式か、wav形式のファイルをドロップしてください\n')
+        text.insert(tk.END, f'{ext}タイプの拡張子は対応していません\nmp3形式か、wav形式のファイルをドロップしてください\n')
     else:
         global dropped_filepath
+        global index
         dropped_filepath = filepath
         text.delete('1.0', tk.END)
         text.insert(tk.END, f'予測の準備ができました！\n{filepath}\n')
+        index=(index+1) % len(photos)
+        canvas.delete('p1')	# 画像を削除
+        canvas.create_image(0, 0, image=photos[index], anchor=tk.NW,tag = "p1")  # 予測中画像に変更
 
 def predict():  # 予想関数
     result = sound_to_predict(dropped_filepath)
+    global index
+    index=(index+1) % len(photos)
+    canvas.delete('p1')	# 画像を削除
+    canvas.create_image(0, 0, image=photos[index], anchor=tk.NW,tag = "p1")  # 予測中画像に変更
     name = os.path.basename(dropped_filepath)
     print(result,"result")
     result = result_comment(result)
@@ -82,19 +95,27 @@ def level(point):   # 確率をレベルに変換する（0.8以上で最高、0
 root = TkinterDnD.Tk()
 root.withdraw()  # tkinterのウィンドウを一時的に隠す
 
-root.title('音源診断！') # 画面タイトル設定
+#画像の取得
+photos=[
+	tk.PhotoImage(file="./predict.png", width=300, height=500),
+	tk.PhotoImage(file="./thinking.png", width=300, height=500)
+]
+
+root.title('音源診断！ : '+version) # 画面タイトル設定
 root.geometry('500x500')  # 画面サイズ設定
 root.resizable(False, False)# リサイズ固定
 
 label = tk.Label(root, text="音源ファイルをここにドラッグ＆ドロップしてください")
 label.pack()
 
-frame = tk.Frame(root, name='drag_and_drop_frame', width=300, height=300, bg='grey')
-frame.pack()
+image = tk.PhotoImage(file="./thinking.png", width=300, height=300)
+canvas = tk.Canvas(root, name='drag_and_drop_frame', width=300, height=300, bg='grey')
+canvas.create_image(0, 0, image=photos[index], anchor=tk.NW,tag = "p1")
+canvas.pack()
 
 # フレームにドロップ操作をバインド
-frame.drop_target_register(DND_FILES)
-frame.dnd_bind('<<Drop>>', drop)
+canvas.drop_target_register(DND_FILES)
+canvas.dnd_bind('<<Drop>>', drop)
 
 predict_button = tk.Button(root, text="予想してもらう！", command=predict)  # 決定ボタン
 predict_button.pack()
