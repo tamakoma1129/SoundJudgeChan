@@ -3,12 +3,14 @@ from tkinterdnd2 import DND_FILES, TkinterDnD
 import joblib
 import librosa
 import numpy as np
+import os
 
 # モデルとLabelEncoderを読み込む
 loaded_model = joblib.load('./modelData/model.pkl')
 loaded_encoder = joblib.load('./modelData/encoder.pkl')
 
 label_dic = {0:"Bass",1:"FX",2:"Lead",3:"Pad",4:"Pluck",5:"Stab"}
+label_list=[[0,"Bass"],[0,"FX"],[0,"Lead"],[0,"Pad"],[0,"Pluck"],[0,"Stab"]]
 
 max_length = int(44100 * 2)  # 今回は3秒でパディングするので、44100Hz*2秒=88200
 
@@ -39,22 +41,66 @@ def sound_to_predict(file_path):
     new_proba = loaded_model.predict_proba(new_data)
     return new_proba
 
+def drop(event):  # ドロップされた時の処理
+    filepath = event.data.strip("{}").replace("/", "\\")
+    ext = os.path.splitext(filepath)[-1].lower()
+    if ext not in [".mp3", ".wav"]:
+        text.delete('1.0', tk.END)
+        text.insert(tk.END, f'このタイプの拡張子は対応していません: {ext}\nmp3形式か、wav形式のファイルをドロップしてください\n')
+    else:
+        global dropped_filepath
+        dropped_filepath = filepath
+        text.delete('1.0', tk.END)
+        text.insert(tk.END, f'予測の準備ができました！\n{filepath}\n')
 
-def drop(event):# ドロップされた時の処理
-    filepath = event.data
-    print(sound_to_predict(filepath))
-    print(f'{filepath} was dropped.')
-    # ここでscikit-learnを用いた音源分析などを実装します。
+def predict():  # 予想関数
+    result = sound_to_predict(dropped_filepath)
+    name = os.path.basename(dropped_filepath)
+    print(result,"result")
+    result = result_comment(result)
+    text.delete('1.0', tk.END)
+    text.insert(tk.END, f'{name}は{level(result[0][0])}{result[0][1]}に使えそうですね～\nもしかしたら{result[1][1]}にも使えるかもしれません！\n')
 
+def result_comment(result): # 確率の高い順に並べてリスト化
+    predict_list = label_list.copy()
+    for i in range(len(result[0])):
+        predict_list[i][0] = result[0][i]
+    predict_list.sort(reverse=True)
+    result = predict_list
+    return result
+def level(point):   # 確率をレベルに変換する（0.8以上で最高、0.6以上で高い、0.4以上で普通、0.2以上で低い、0.2未満で最低）
+    if point >= 0.8:
+        return "かなり"
+    elif point >= 0.6:
+        return "けっこう"
+    elif point >= 0.4:
+        return "普通に"
+    elif point >= 0.2:
+        return "ちょっと"
+    else:
+        return "あまり自信がないですが…"
 root = TkinterDnD.Tk()
 root.withdraw()  # tkinterのウィンドウを一時的に隠す
 
-frame = tk.Frame(root, name='drag_and_drop_frame', width=300, height=300)
+root.title('音源診断！') # 画面タイトル設定
+root.geometry('500x500')  # 画面サイズ設定
+root.resizable(False, False)# リサイズ固定
+
+label = tk.Label(root, text="音源ファイルをここにドラッグ＆ドロップしてください")
+label.pack()
+
+frame = tk.Frame(root, name='drag_and_drop_frame', width=300, height=300, bg='grey')
 frame.pack()
 
 # フレームにドロップ操作をバインド
 frame.drop_target_register(DND_FILES)
 frame.dnd_bind('<<Drop>>', drop)
+
+predict_button = tk.Button(root, text="予想してもらう！", command=predict)  # 決定ボタン
+predict_button.pack()
+
+text = tk.Text(root, height=10, font=("TkDefaultFont", 15))
+text.pack()
 
 root.update()
 root.deiconify()  # tkinterのウィンドウを再表示
