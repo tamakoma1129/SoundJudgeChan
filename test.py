@@ -105,7 +105,7 @@ root.title('音源診断！ : '+version) # 画面タイトル設定
 root.geometry('500x500')  # 画面サイズ設定
 root.resizable(False, False)# リサイズ固定
 
-label = tk.Label(root, text="音源ファイルをここにドラッグ＆ドロップしてください")
+label = tk.Label(root, text="音源ファイルをランダムフォレストちゃんにドラッグ＆ドロップしてください")
 label.pack()
 
 image = tk.PhotoImage(file="./thinking.png", width=300, height=300)
