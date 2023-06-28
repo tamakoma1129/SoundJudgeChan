@@ -25,9 +25,17 @@
 
 また、判断できるのはBass,FX,Lead,Pad,Pluck,Stabの6つとなっています。
 ## 技術や内部的な話
-Bass,FX,Lead,Pad,Pluck,Stabの音源をそれぞれ約100個ずつほどを学習データにし学習させました。    
-機械学習モデルはsklearnのRandomForestClassifier、いわゆるランダムフォレストを使用しました。    
 
+### 学習データの話
+学習データはBass,FX,Lead,Pad,Pluck,Stabの音源をそれぞれ約100個ずつほどを学習データにし学習させました。    
+音源は[Splice](https://splice.com/home)というサイトから購入したものになります。
 
-絵は全てStable Diffusionで生成しており、プロンプトに商標的な固有名詞は入れておりません。   
-詳しい内容はソースコードを見ていただくか、[私のブログ](https://tamakoma.com/category/python/)にある程度記載があります。
+### 機械学習モデル
+機械学習モデルはsklearnのRandomForestClassifier、いわゆるランダムフォレストを使用しました。   
+他にも、決定木、GBDT、K-近傍法を試しましたが、時間コストやらを考慮した結果ランダムフォレストにしました。
+
+### 絵やロゴ
+絵は全てStable Diffusionで生成しており、プロンプトに商標的な固有名詞は入れておりません。
+ロゴも同じくStable Diffusionで生成しています。
+
+制作についての詳しい内容はソースコードを見ていただくか、[私のブログ](https://tamakoma.com/category/python/)にある程度記載があります。
